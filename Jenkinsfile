@@ -3,6 +3,7 @@ pipeline {
 
     options {
         disableConcurrentBuilds()
+        timestamps()
     }
 
     environment {
@@ -20,20 +21,24 @@ pipeline {
         }
 
         stage('Build and Push Image') {
-            when { branch 'main' }
+            when {
+                branch 'main'
+            }
             steps {
                 script {
                     env.IMAGE_TAG = "build-${BUILD_NUMBER}"
 
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhub-creds',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )]) {
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'dockerhub-creds',
+                            usernameVariable: 'DOCKER_USER',
+                            passwordVariable: 'DOCKER_PASS'
+                        )
+                    ]) {
                         sh """
-                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                            docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                            echo "\$DOCKER_PASS" | docker login -u "\$DOCKER_USER" --password-stdin
+                            docker push ${IMAGE_NAME}:${IMAGE_TAG}
                         """
                     }
                 }
@@ -41,32 +46,32 @@ pipeline {
         }
 
         stage('Update K8s Manifest') {
-            when { branch 'main' }
+            when {
+                branch 'main'
+            }
             steps {
                 script {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'github-creds',
-                        usernameVariable: 'GIT_USERNAME',
-                        passwordVariable: 'GIT_TOKEN'
-                    )]) {
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'github-creds',
+                            usernameVariable: 'GIT_USERNAME',
+                            passwordVariable: 'GIT_TOKEN'
+                        )
+                    ]) {
                         sh """
-                        set -e
-                        git config user.name "$GIT_USER"
-                        git config user.email "$GIT_EMAIL"
+                            set -e
 
-                        git fetch origin
-                        git checkout main
-                        git reset --hard origin/main
+                            git config user.name "${GIT_USER}"
+                            git config user.email "${GIT_EMAIL}"
 
-                        sed -i "s|image:.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|" k8s/deployment.yml
+                            git fetch origin
+                            git checkout main
+                            git reset --hard origin/main
 
-                        git add k8s/deployment.yml
-                        git diff --cached --quiet || git commit -m "Updated image to ${IMAGE_TAG}"
-                        git push https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/Mikey4304/Multi-Branch-Prod-1.git main
-                        """
-                    }
-                }
-            }
-        }
-    }
-}
+                            sed -i "s|image:.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|" k8s/deployment.yml
+
+                            git add k8s/deployment.yml
+
+                            git diff --cached --quiet || git commit -m "Updated image to ${IMAGE_TAG}"
+
+                            git remote set-url origin https://${GIT
