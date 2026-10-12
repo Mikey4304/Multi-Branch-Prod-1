@@ -74,4 +74,25 @@ pipeline {
 
                             git diff --cached --quiet || git commit -m "Updated image to ${IMAGE_TAG}"
 
-                            git remote set-url origin https://${GIT
+                            git push https://\$GIT_USERNAME:\$GIT_TOKEN@github.com/Mikey4304/Multi-Branch-Prod-1.git HEAD:main
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed successfully"
+        }
+
+        failure {
+            echo "Pipeline failed"
+        }
+
+        always {
+            sh 'docker image prune -f || true'
+        }
+    }
+}
