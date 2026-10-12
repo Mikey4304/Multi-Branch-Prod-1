@@ -10,7 +10,7 @@ pipeline {
         IMAGE_NAME    = 'aditya4304/multibranch-flask-app'
         GIT_USER      = 'Mikey4304'
         GIT_EMAIL     = 'adityapathania0319@gmail.com'
-        MANIFEST_FILE = 'k8s/deployment.yml'
+        MANIFEST_FILE = 'k8s/deployment.yaml'
         REPO_PATH     = 'Mikey4304/Multi-Branch-Prod-1.git'
     }
  
